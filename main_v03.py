@@ -42,10 +42,11 @@ startimg = pygame.transform.smoothscale(startIMG, (SCREEN_WIDTH, SCREEN_HEIGHT))
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 font_addr = pygame.font.get_default_font()
 font = pygame.font.Font(font_addr, 36)
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-torch.cuda.current_device()
-a = torch.cuda.is_available()
-print(a)
+# torch.cuda.current_device()
+# a = torch.cuda.is_available()
+# print(a)
 
 def preprocess(observation):
     observation = cv2.cvtColor(cv2.resize(observation, (80, 80)), cv2.COLOR_BGR2GRAY)
@@ -78,6 +79,7 @@ class DeepQNetwork(nn.Module):
         self.out = nn.Linear(256, 3)
 
     def forward(self, x):
+        x = x.to(device)
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
@@ -94,8 +96,8 @@ class BrainDQNMain(object):
         self.batch_size = 0
         self.epsilon = INITIAL_EPSILON
         self.actions = actions
-        self.Q_net = DeepQNetwork()
-        self.Q_netT = DeepQNetwork()
+        self.Q_net = DeepQNetwork().to(device)
+        self.Q_netT = DeepQNetwork().to(device)
         self.load()
         self.loss_func = nn.MSELoss()
         LR = 1e-3
@@ -122,7 +124,7 @@ class BrainDQNMain(object):
 
         y_batch = np.zeros([BATCH_SIZE, 1])
         nextState_batch = np.array(nextState_batch)
-        nextState_batch = torch.Tensor(nextState_batch)
+        nextState_batch = torch.Tensor(nextState_batch, device=device, dtype=torch.long)
         action_batch = np.array(action_batch)
 
         index = action_batch.argmax(axis=1)
