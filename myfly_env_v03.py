@@ -3,7 +3,7 @@ import pygame
 import random
 from pathlib import Path
 from pygame.locals import *
-from main_v03 import main
+# from main_v03 import main
 import matplotlib
 import matplotlib.pyplot as plt
 

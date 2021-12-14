@@ -99,7 +99,7 @@ class BrainDQNMain(object):
         self.Q_net = DeepQNetwork().to(device)
         self.Q_netT = DeepQNetwork().to(device)
         self.load()
-        self.loss_func = nn.MSELoss()
+        self.loss_func = nn.MSELoss().to(device)
         LR = 1e-3
         self.optimizer = torch.optim.Adam(self.Q_net.parameters(), lr=LR)
 
@@ -124,7 +124,7 @@ class BrainDQNMain(object):
 
         y_batch = np.zeros([BATCH_SIZE, 1])
         nextState_batch = np.array(nextState_batch)
-        nextState_batch = torch.Tensor(nextState_batch, device=device, dtype=torch.long)
+        nextState_batch = torch.Tensor(nextState_batch)
         action_batch = np.array(action_batch)
 
         index = action_batch.argmax(axis=1)
@@ -152,9 +152,9 @@ class BrainDQNMain(object):
         y_batch = np.array(y_batch)
         y_batch = np.reshape(y_batch, [BATCH_SIZE, 1])
         # print('bbbbbbbbbbbb', each_reward)
-        state_batch_tensor = Variable(torch.Tensor(state_batch))
+        state_batch_tensor = Variable(torch.Tensor(state_batch), device=device, dtype=torch.long)
         # variable提供了自动求导的功能
-        y_batch_tensor = Variable(torch.Tensor(y_batch))
+        y_batch_tensor = Variable(torch.Tensor(y_batch), device=device, dtype=torch.float)
         y_predict = self.Q_net(state_batch_tensor).gather(1, action_batch_tensor)  # 索引对应Q值
         loss = self.loss_func(y_predict, y_batch_tensor)
         self.optimizer.zero_grad()
