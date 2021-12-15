@@ -133,7 +133,7 @@ class BrainDQNMain(object):
         action_batch_tensor = torch.LongTensor(index)
 
         QValue_batch = self.Q_netT(nextState_batch)  # 使用target网络，预测nextState_batch的动作
-        QValue_batch = QValue_batch.detach().numpy()
+        QValue_batch = QValue_batch.detach().cpu().numpy()
         # 计算每个state的reward
         total_reward = 0
         for i in range(0, BATCH_SIZE):
