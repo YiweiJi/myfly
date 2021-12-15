@@ -88,7 +88,6 @@ class DeepQNetwork(nn.Module):
         return self.out(x)
 
 
-
 class BrainDQNMain(object):
     def __init__(self, actions):
         self.replayMemory = deque()
