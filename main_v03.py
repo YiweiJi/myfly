@@ -198,7 +198,7 @@ class BrainDQNMain(object):
                 # print("choose random action " + str(action_index))
                 action[action_index] = 1
             else:
-                action_index = np.argmax(QValue.detach().numpy())
+                action_index = np.argmax(QValue.detach().cpu().numpy())
 
                 action[action_index] = 1
         else:
