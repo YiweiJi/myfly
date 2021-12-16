@@ -114,8 +114,8 @@ class BrainDQNMain(object):
     def load(self):
         if os.path.exists(curr_path_2/'params31.pth'):
             #print("load model param successful")
-            self.Q_net.load_state_dict(torch.load(curr_path_2/'params31.pth'))
-            self.Q_netT.load_state_dict(torch.load(curr_path_2/'params31.pth'))
+            self.Q_net.load_state_dict(torch.jit.load(curr_path_2/'params31.pth'))
+            self.Q_netT.load_state_dict(torch.jit.load(curr_path_2/'params31.pth'))
 
     def train(self):
         minibatch = random.sample(self.replayMemory, BATCH_SIZE)
