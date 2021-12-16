@@ -22,7 +22,7 @@ SCREEN_HEIGHT = 800
 
 OBSERVE = 100
 EXPLORE = 2000000
-INITIAL_EPSILON = 0.1
+INITIAL_EPSILON = 0.0001
 FINAL_EPSILON = 0.0001
 BATCH_SIZE = 32
 GAMMA = 0.99
@@ -42,10 +42,11 @@ startimg = pygame.transform.smoothscale(startIMG, (SCREEN_WIDTH, SCREEN_HEIGHT))
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 font_addr = pygame.font.get_default_font()
 font = pygame.font.Font(font_addr, 36)
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-torch.cuda.current_device()
+# torch.cuda.current_device()
 a = torch.cuda.is_available()
-print(a)
+# print(a)
 
 
 def preprocess(observation):
@@ -79,6 +80,7 @@ class DeepQNetwork(nn.Module):
         self.out = nn.Linear(256, 3)
 
     def forward(self, x):
+        x = x.to(device)
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
@@ -95,7 +97,7 @@ class BrainDQNMain(object):
         self.batch_size = 0
         self.epsilon = INITIAL_EPSILON
         self.actions = actions
-        self.Q_net = DeepQNetwork()
+        self.Q_net = DeepQNetwork().to(device)
         #self.Q_netT = DeepQNetwork()
         self.load()
         #self.loss_func = nn.MSELoss()
@@ -103,36 +105,28 @@ class BrainDQNMain(object):
         #self.optimizer = torch.optim.Adam(self.Q_net.parameters(), lr=LR)
 
     def load(self):
-        if os.path.exists(curr_path_2/'params30.pth'):
+        if os.path.exists(curr_path_2/'params31.pth'):
             #print("load model param successful")
-            self.Q_net.load_state_dict(torch.load(curr_path_2/'params30.pth'))
+            self.Q_net.load_state_dict(torch.load(curr_path_2/'params31.pth'))
 
     def set_perception(self, nextObservation):
         newState = np.append(self.currentState[1:, :, :], nextObservation, axis=0)
         self.currentState = newState
 
     def get_action(self):
-        currentState = torch.Tensor([self.currentState])
+        currentState = torch.Tensor([self.currentState]).to(device)
         QValue = self.Q_net(currentState)[0]
         #print("QValue",QValue)
         #print("self.Q_net",self.Q_net(currentState))
         action = np.zeros(self.actions)
         if self.timeStep % FRAME_PER_ACTION == 0:
-            if random.random() <= self.epsilon:
-                # 生成0-1的随机数
-                action_index = random.randrange(self.actions)
-                # print("choose random action " + str(action_index))
-                action[action_index] = 1
-            else:
-                action_index = np.argmax(QValue.detach().numpy())
 
-                action[action_index] = 1
+            action_index = np.argmax(QValue.detach().cpu().numpy())
+
+            action[action_index] = 1
         else:
             action[0] = 1
 
-        #if self.epsilon > FINAL_EPSILON and self.timeStep > OBSERVE:
-          #  self.epsilon -= (INITIAL_EPSILON - FINAL_EPSILON) / EXPLORE
-        # print("qqq",action)
         return action
 
     def set_init_state(self, observation):
@@ -242,7 +236,7 @@ def main():
     ret, observation0 = cv2.threshold(observation0, 1, 255, cv2.THRESH_BINARY)
     brain.set_init_state(observation0)
 
-    while 1 != 0 :
+    while 1 != 0:
 
                 action = brain.get_action()
                 nextObservation, reward, terminal = fly.frame_step(action, game_type)
