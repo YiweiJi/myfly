@@ -157,7 +157,7 @@ class BrainDQNMain(object):
         # print('bbbbbbbbbbbb', each_reward)
         state_batch_tensor = Variable(torch.Tensor(state_batch))
         # variable提供了自动求导的功能
-        y_batch_tensor = Variable(torch.Tensor(y_batch))
+        y_batch_tensor = Variable(torch.Tensor(y_batch).to(device))
         y_predict = self.Q_net(state_batch_tensor).gather(1, action_batch_tensor)  # 索引对应Q值
         loss = self.loss_func(y_predict, y_batch_tensor)
         self.optimizer.zero_grad()
