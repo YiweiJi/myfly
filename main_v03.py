@@ -119,10 +119,11 @@ class BrainDQNMain(object):
 
     def train(self):
         minibatch = random.sample(self.replayMemory, BATCH_SIZE)
-        state_batch = [data[0].to(device) for data in minibatch]
-        action_batch = [data[1].to(device) for data in minibatch]
-        reward_batch = [data[2].to(device) for data in minibatch]
-        nextState_batch = [data[3].to(device) for data in minibatch]
+        # state_batch = torch.tensor(data[0]).to(device)
+        state_batch = [torch.tensor(data[0]).to(device) for data in minibatch]
+        action_batch = [torch.tensor(data[1]).to(device) for data in minibatch]
+        reward_batch = [torch.tensor(data[2]).to(device) for data in minibatch]
+        nextState_batch = [torch.tensor(data[3]).to(device) for data in minibatch]
 
         y_batch = np.zeros([BATCH_SIZE, 1])
         nextState_batch = np.array(nextState_batch)
