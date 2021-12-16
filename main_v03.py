@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 sys.path.append("fly/")
-import environment as env
+import myfly_env_v03 as env
 import numpy as np
 import random
 import torch
@@ -35,10 +35,11 @@ ay = []
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 pygame.init()
-paths = ["images"]
-# curr_path = Path.cwd()
-curr_path = Path.cwd().joinpath(*paths)
-curr_path_2 = Path.cwd().joinpath(*paths)
+# paths = ["images"]
+curr_path = Path.cwd()
+curr_path_2 = Path.cwd()
+# curr_path = Path.cwd().joinpath(*paths)
+# curr_path_2 = Path.cwd().joinpath(*paths)
 startIMG = pygame.image.load(curr_path / 'bg.png')
 startimg = pygame.transform.smoothscale(startIMG, (SCREEN_WIDTH, SCREEN_HEIGHT))
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -312,9 +313,9 @@ def main():
     game_type = starting_screen()
     actions = 3  # 动作个数
     brain = BrainDQNMain(actions)
-    fly = env.Game()
+    fly = env.GameState()
     action0 = np.array([1, 0, 0])
-    observation0, reward0, terminal = fly.step(action0)
+    observation0, reward0, terminal = fly.frame_step(action0, game_type)
     observation0 = cv2.cvtColor(cv2.resize(observation0, (80, 80)), cv2.COLOR_BGR2GRAY)
     ret, observation0 = cv2.threshold(observation0, 1, 255, cv2.THRESH_BINARY)
     brain.set_init_state(observation0)
@@ -322,7 +323,7 @@ def main():
     while 1 != 0 :
 
                 action = brain.get_action()
-                nextObservation, reward, terminal = fly.step(action)
+                nextObservation, reward, terminal = fly.frame_step(action, game_type)
                 nextObservation = preprocess(nextObservation)
                 brain.set_perception(nextObservation, action, reward, terminal)
 
