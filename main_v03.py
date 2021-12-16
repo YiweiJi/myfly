@@ -119,10 +119,10 @@ class BrainDQNMain(object):
 
     def train(self):
         minibatch = random.sample(self.replayMemory, BATCH_SIZE)
-        state_batch = [data[0] for data in minibatch]
-        action_batch = [data[1] for data in minibatch]
-        reward_batch = [data[2] for data in minibatch]
-        nextState_batch = [data[3] for data in minibatch]
+        state_batch = [data[0] for data in minibatch].to(device)
+        action_batch = [data[1] for data in minibatch].to(device)
+        reward_batch = [data[2] for data in minibatch].to(device)
+        nextState_batch = [data[3] for data in minibatch].to(device)
 
         y_batch = np.zeros([BATCH_SIZE, 1])
         nextState_batch = np.array(nextState_batch)
