@@ -35,17 +35,21 @@ ay = []
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 pygame.init()
+# paths = ["images"]
 curr_path = Path.cwd()
 curr_path_2 = Path.cwd()
+# curr_path = Path.cwd().joinpath(*paths)
+# curr_path_2 = Path.cwd().joinpath(*paths)
 startIMG = pygame.image.load(curr_path / 'bg.png')
 startimg = pygame.transform.smoothscale(startIMG, (SCREEN_WIDTH, SCREEN_HEIGHT))
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 font_addr = pygame.font.get_default_font()
 font = pygame.font.Font(font_addr, 36)
 
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# print(device)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# torch.cuda.current_device()
+a = torch.cuda.is_available()
+# print(a)
 
 def preprocess(observation):
     observation = cv2.cvtColor(cv2.resize(observation, (80, 80)), cv2.COLOR_BGR2GRAY)
@@ -78,13 +82,13 @@ class DeepQNetwork(nn.Module):
         self.out = nn.Linear(256, 3)
 
     def forward(self, x):
+        x = x.to(device)
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
         x = x.view(x.size(0), -1)  # 多维tensor展平成一维
         x = self.fc1(x)
         return self.out(x)
-
 
 
 class BrainDQNMain(object):
@@ -94,27 +98,28 @@ class BrainDQNMain(object):
         self.batch_size = 0
         self.epsilon = INITIAL_EPSILON
         self.actions = actions
-        self.Q_net = DeepQNetwork()
-        self.Q_netT = DeepQNetwork()
+        self.Q_net = DeepQNetwork().to(device)
+        self.Q_netT = DeepQNetwork().to(device)
         self.load()
-        self.loss_func = nn.MSELoss()
+        self.loss_func = nn.MSELoss().to(device)
         LR = 1e-3
         self.optimizer = torch.optim.Adam(self.Q_net.parameters(), lr=LR)
 
     def save(self):
         #print("save model param")
         # state_dict = torch.load("params3.pth")
-        torch.save(self.Q_net.state_dict(), curr_path_2/'params12.pth')  # 保存训练好的参数
-        # torch.save(state_dict, 'params3.pth',_use_new_zipfile_serialization=False)
+        torch.save(self.Q_net.state_dict(), curr_path_2/'params32.pth')  # 保存训练好的参数
+
 
     def load(self):
-        if os.path.exists(curr_path_2/'params12.pth'):
+        if os.path.exists(curr_path_2/'params32.pth'):
             #print("load model param successful")
-            self.Q_net.load_state_dict(torch.load(curr_path_2/'params12.pth'))
-            self.Q_netT.load_state_dict(torch.load(curr_path_2/'params12.pth'))
+            self.Q_net.load_state_dict(torch.load(curr_path_2/'params32.pth'))
+            self.Q_netT.load_state_dict(torch.load(curr_path_2/'params32.pth'))
 
     def train(self):
         minibatch = random.sample(self.replayMemory, BATCH_SIZE)
+
         state_batch = [data[0] for data in minibatch]
         action_batch = [data[1] for data in minibatch]
         reward_batch = [data[2] for data in minibatch]
@@ -122,38 +127,37 @@ class BrainDQNMain(object):
 
         y_batch = np.zeros([BATCH_SIZE, 1])
         nextState_batch = np.array(nextState_batch)
-        nextState_batch = torch.Tensor(nextState_batch)
+        nextState_batch = torch.Tensor(nextState_batch).to(device)
         action_batch = np.array(action_batch)
 
         index = action_batch.argmax(axis=1)
         # axis=1是在行中比较选出最大的列索引，axis=0是在列中比较选出最大的行索引。
         index = np.reshape(index, [BATCH_SIZE, 1])
-        action_batch_tensor = torch.LongTensor(index)
+        action_batch_tensor = torch.LongTensor(index).to(device)
 
-        QValue_batch = self.Q_netT(nextState_batch)  # 使用target网络，预测nextState_batch的动作。得到Agent在next_state状态时所有可执行的动作的Q值表(q_next)
-        QValue_batch = QValue_batch.detach().numpy()
-        # 计算目标 Q 值Q(state, action)，Q(state, action) = R(state, action) + Gamma * Max{q_next}
-        # total_reward = 0
+        QValue_batch = self.Q_netT(nextState_batch)  # 使用target网络，预测nextState_batch的动作
+        QValue_batch = QValue_batch.detach().cpu().numpy()
+        # 计算每个state的reward
+        total_reward = 0
         for i in range(0, BATCH_SIZE):
             terminal = minibatch[i][4]
             if terminal:
                 y_batch[i][0] = reward_batch[i]
             else:
                 y_batch[i][0] = reward_batch[i] + GAMMA * np.max(QValue_batch[i])
-            # total_reward += reward_batch[i]
+            total_reward += reward_batch[i]
 
 
-        # each_reward = total_reward / BATCH_SIZE
-        # each_reward = round(each_reward, 2)
-        # ay.append(each_reward)
+        each_reward = total_reward / BATCH_SIZE
+        each_reward = round(each_reward, 2)
+        ay.append(each_reward)
         # print("qqqq",each_reward)
         y_batch = np.array(y_batch)
         y_batch = np.reshape(y_batch, [BATCH_SIZE, 1])
-
         # print('bbbbbbbbbbbb', each_reward)
         state_batch_tensor = Variable(torch.Tensor(state_batch))
         # variable提供了自动求导的功能
-        y_batch_tensor = Variable(torch.Tensor(y_batch))
+        y_batch_tensor = Variable(torch.Tensor(y_batch).to(device))
         y_predict = self.Q_net(state_batch_tensor).gather(1, action_batch_tensor)  # 索引对应Q值
         loss = self.loss_func(y_predict, y_batch_tensor)
         self.optimizer.zero_grad()
@@ -164,37 +168,31 @@ class BrainDQNMain(object):
             self.Q_netT.load_state_dict(self.Q_net.state_dict())
             self.save()
 
-    # 保存记忆
     def set_perception(self, nextObservation, action, reward, terminal):
-        # print('-----self.currentState:\n', self.currentState)
-        # print('--------self.currentState[1:, :, :]:\n', self.currentState[1:, :, :])
-        newState = np.append(self.currentState[1:, :, :], nextObservation, axis=0)   # axis=0，行数增加，列不变
+        newState = np.append(self.currentState[1:, :, :], nextObservation, axis=0)
         self.replayMemory.append((self.currentState, action, reward, newState, terminal))
         if len(self.replayMemory) > REPLAY_MEMORY:
             self.replayMemory.popleft()
         if self.timeStep > OBSERVE:
             self.train()
             self.batch_size += 1
-            # ax.append(self.batch_size)
+            ax.append(self.batch_size)
         state = ""
         if self.timeStep <= OBSERVE:
             state = "observe"
         elif self.timeStep > OBSERVE and self.timeStep <= OBSERVE + EXPLORE:
             state = "explore"
         else:
-            pass
+            state = "train"
         # print ("TIMESTEP", self.timeStep, "/ STATE", state, "/ EPSILON", self.epsilon)
         self.currentState = newState
         self.timeStep += 1
 
-    # 搜索动作
     def get_action(self):
-        currentState = torch.Tensor([self.currentState])
+        currentState = torch.Tensor([self.currentState]).to(device)
         QValue = self.Q_net(currentState)[0]
-        # print('-----self.currentState:\n', self.currentState)
-        # print('-----currentState:\n', currentState)
-        # print('--------------self.Q_net(currentState):\n', self.Q_net(currentState))
-        # print('--------------self.Q_net(currentState)[0]:\n', self.Q_net(currentState)[0])
+        #print("QValue",QValue)
+        #print("self.Q_net",self.Q_net(currentState))
         action = np.zeros(self.actions)
         if self.timeStep % FRAME_PER_ACTION == 0:
             if random.random() <= self.epsilon:
@@ -203,7 +201,8 @@ class BrainDQNMain(object):
                 # print("choose random action " + str(action_index))
                 action[action_index] = 1
             else:
-                action_index = np.argmax(QValue.detach().numpy())
+                action_index = np.argmax(QValue.detach().cpu().numpy())
+
                 action[action_index] = 1
         else:
             action[0] = 1
@@ -230,7 +229,7 @@ class Button(object):
         else:
             self.x = x
 
-        if 'centered_y' in kwargs and kwargs['cenntered_y']:
+        if 'centered_y' in kwargs and kwargs['centered_y']:
             self.y = SCREEN_HEIGHT // 2 - self.HEIGHT // 2
         else:
             self.y = y
@@ -258,9 +257,11 @@ def starting_screen():
 
     play_button = Button('Manual', RED, None, 350, centered_x=True)
     exit_button = Button('Automatic', WHITE, None, 400, centered_x=True)
+    Play_button = Button('Play', RED, None , 450, centered_x=True)
 
     play_button.display()
     exit_button.display()
+    Play_button.display()
 
     pygame.display.update()
 
@@ -276,8 +277,15 @@ def starting_screen():
         else:
             exit_button = Button('Automatic', WHITE, None, 400, centered_x=True)
 
+        if Play_button.check_click(pygame.mouse.get_pos()):
+            Play_button = Button('Play', RED, None , 450 , centered_x=True)
+        else:
+            Play_button = Button('Play', WHITE, None , 450 , centered_x=True)
+
         play_button.display()
         exit_button.display()
+        Play_button.display()
+
         pygame.display.update()
 
         for event in pygame.event.get():
@@ -293,11 +301,15 @@ def starting_screen():
                 g_type = "auto"
                 return g_type
                 break
+            if Play_button.check_click(pygame.mouse.get_pos()):
+                g_type = "play"
+                return g_type
+                break
 
 
 def main():
     # Step 1: init BrainDQN
-    # Reward= []
+
 
     game_type = starting_screen()
     actions = 3  # 动作个数
@@ -307,45 +319,14 @@ def main():
     observation0, reward0, terminal = fly.frame_step(action0, game_type)
     observation0 = cv2.cvtColor(cv2.resize(observation0, (80, 80)), cv2.COLOR_BGR2GRAY)
     ret, observation0 = cv2.threshold(observation0, 1, 255, cv2.THRESH_BINARY)
-    brain.set_init_state(observation0)   # 对初始图片进行堆叠
+    brain.set_init_state(observation0)
 
     while 1 != 0 :
 
-        action = brain.get_action()
-        # print("action",action)
-        nextObservation, reward, terminal = fly.frame_step(action, game_type)
-        #print("reward", reward)
-        # Reward.append(reward)
-        #print("Reward",Reward)
-        nextObservation = preprocess(nextObservation)
-        # print(nextObservation.shape)
-        brain.set_perception(nextObservation, action, reward, terminal)
-        # plt.ion()  # 开启一个画图的窗口
-        # plt.clf()  # 清除之前画的图
-        # plt.plot(ax, ay)  # 画出当前 ax 列表和 ay 列表中的值的图形
-        # plt.pause(0.01)
-        # plt.ioff()  # 关闭画图的窗口
-
-
-        '''
-            if terminal:
-                env.reset()
-                # Step 1: init BrainDQN                actions = 3  # 动作个数
-                brain = BrainDQNMain(actions)
-                #fly = env.Game()
-                action0 = np.array([0, 0, 1])
-                observation0, reward0, terminal = env.Game().frame_step(action0)
-                # print('==================')
-                # print(observation0)
-                # print('====== =======reward0================')
-                # print(reward0)
-                # print('------------terminal---------')
-                # print(terminal)
-                observation0 = cv2.cvtColor(cv2.resize(observation0, (80, 80)), cv2.COLOR_BGR2GRAY)
-                ret, observation0 = cv2.threshold(observation0, 1, 255, cv2.THRESH_BINARY)
-                brain.setInitState(observation0)
-                '''
-
+                action = brain.get_action()
+                nextObservation, reward, terminal = fly.frame_step(action, game_type)
+                nextObservation = preprocess(nextObservation)
+                brain.set_perception(nextObservation, action, reward, terminal)
 
 if __name__ == '__main__':
     main()

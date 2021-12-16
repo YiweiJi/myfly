@@ -3,7 +3,7 @@ import pygame
 import random
 from pathlib import Path
 from pygame.locals import *
-from main00 import main
+
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -15,7 +15,7 @@ NOOB_SPEED = 20
 ACE_SPEED = 30
 NOOB_HP = 1
 ACE_HP = 2
-ENEMY_FREQUENCY = 15
+ENEMY_FREQUENCY = 10
 ENEMY_ACE_FREQUENCY = 70
 ACE_APPEAR_SCORE = 20
 
@@ -23,8 +23,8 @@ curr_path=Path.cwd()
 
 bgIMG = pygame.image.load(curr_path / 'bg.png')
 playerIMG = pygame.image.load(curr_path / 'player.png')
-enemynoobIMG = pygame.image.load(curr_path / 'enemy_noob.png')
-enemyaceIMG = pygame.image.load(curr_path / 'enemy_ace.png')
+enemynoobIMG = pygame.image.load(curr_path / 'enemynoob.png')
+enemyaceIMG = pygame.image.load(curr_path / 'enemyace.png')
 bulletIMG = pygame.image.load(curr_path / 'bullet.png')
 enemyburstIMG = pygame.image.load(curr_path / 'burst.png')
 
@@ -33,8 +33,8 @@ bgimg = pygame.transform.smoothscale(bgIMG, (SCREEN_WIDTH, SCREEN_HEIGHT))
 overimg = pygame.transform.smoothscale(bgIMG, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
 playerimg = pygame.transform.smoothscale(playerIMG,
-                                         (SCREEN_WIDTH * playerIMG.get_rect().width // bgIMG.get_rect().width, \
-                                          SCREEN_HEIGHT * playerIMG.get_rect().height // bgIMG.get_rect().height))
+                                         (SCREEN_WIDTH  *playerIMG.get_rect().width // bgIMG.get_rect().width, \
+                                          SCREEN_HEIGHT *playerIMG.get_rect().height // bgIMG.get_rect().height))
 
 enemynoobimg = pygame.transform.smoothscale(enemynoobIMG,
                                             (SCREEN_WIDTH * enemynoobIMG.get_rect().width // bgIMG.get_rect().width, \
@@ -57,7 +57,7 @@ class Player(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.image = playerimg
         self.rect = self.image.get_rect()
-        self.rect.bottomleft = init_pos  # 初始化玩家的坐标
+        self.rect.midbottom = init_pos  # 初始化玩家的坐标
         self.speed = PLAYER_SPEED
         self.bullets_group = pygame.sprite.Group()
         self.is_over = False
@@ -85,7 +85,7 @@ class Player(pygame.sprite.Sprite):
     #     self.bullets.add(bullet)
     #     reward = -0.25
     #     score=score-0.3
-    #     return score,reward                 
+    #     return score,reward
 
 
 class Bullet(pygame.sprite.Sprite):
@@ -106,7 +106,7 @@ class Enemy(pygame.sprite.Sprite):
         self.image = enemy_img
         self.enemyburstimg = enemyburstimg
         self.rect = self.image.get_rect()
-        self.rect.topleft = init_pos
+        self.rect.midbottom = init_pos
         self.speed = speed
         self.speed2 = self.rect.height
         self.maxhp = maxhp
@@ -124,9 +124,9 @@ class GameState():
         pygame.display.set_caption('飞机游戏')
         icon = pygame.image.load(curr_path / 'ufo.png')
         pygame.display.set_icon(icon)
-        # self.screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        self.player = Player((0, SCREEN_HEIGHT))
+        self.player = Player(self.screen.get_rect().bottomleft)
         self.enemies_group = pygame.sprite.Group()  # 敌机精灵组
         self.enemies_down_group = pygame.sprite.Group()  # 敌机击毁精灵组
 
@@ -134,59 +134,63 @@ class GameState():
         self.enemy_frequency = 0
         self.enemy_ace_frequency = 0
         self.score = 0
-        # self.reward = 0
-        # self.reward1 = 0
-        self.rewards = 0
-        self.terminal = False
-        self.num = 0
-        self.cycle = 0
-        self.ax = []
-        self.ay = []
-
-    def frame_step(self, input_actions, chose_type):
         self.reward = 0
-        self.reward1 = 0
+        # self.reward1=0
+        self.terminal = False
+        self.rewards=0
+        self.a=0
+        self.Reward=[]
+        self.Action=[]
+        self.cycle=0
+        self.ax=[]
+        self.ay=[]
+        #self.rewards += self.reward
+    def frame_step(self, input_actions, chose_type):
+        #print("indd",input_actions)
+        self.reward=0
+        # self.reward1=0
         self.terminal = self.game_mode(input_actions, chose_type)
 
         self.off_screen_event(input_actions)
         self.create_enemy()
         self.screen.blit(bgimg, (0, 0))
+        pygame.draw.line(self.screen, (255,255,255), (0,SCREEN_HEIGHT - self.player.rect.height*1.5), (SCREEN_WIDTH,SCREEN_HEIGHT - self.player.rect.height*1.5), 1)
+        #self.screen.fill(0)
         self.screen.blit(playerimg, self.player.rect)
-        pygame.draw.line(self.screen, (255, 255, 255), (0, SCREEN_HEIGHT-self.player.rect.height*1.5), \
-                         (SCREEN_WIDTH, SCREEN_HEIGHT-self.player.rect.height*1.5), 1)
 
-        self.collision_event()
+        self.collision_event(input_actions,chose_type)
         self.rewards += self.reward
-        self.rewards += self.reward1
-        print('reward:', self.reward)
-        print('-----------reward1:', self.reward1)
-        print('======================rewards:', self.reward+self.reward1)
+
+        #print("terminal",self.terminal)
         if self.terminal:
             self.cycle += 1
         # 显示子弹和敌机
         self.player.bullets_group.draw(self.screen)
         self.enemies_group.draw(self.screen)
+        print('=========self.reward:', self.reward)
 
-        if self.terminal:
-            self.player = Player((0, SCREEN_HEIGHT))
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                exit()
+        if self.reward == -20:
+            self.player = Player(self.screen.get_rect().bottomleft)
             self.enemies_group = pygame.sprite.Group()  # 敌机精灵组
             self.enemies_down_group = pygame.sprite.Group()  # 敌机击毁精灵组
             self.ax.append(self.cycle)
-            self.ay.append(self.rewards)
-
+            self.ay.append(self.score)
             self.shoot_frequency = 0  # 频率
             self.enemy_frequency = 0
             self.enemy_ace_frequency = 0
             self.score = 0
             self.reward = 0
-            self.reward1 = 0
-            self.rewards = 0
-            self.num = 0
-            self.terminal = False
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                exit()
 
+            self.terminal = False
+            self.rewards = 0
+            self.a=0
+            self.Action=[]
+            self.Reward=[]
+            #self.input_action=0
         plt.ion()  # 开启一个画图的窗口
         plt.clf()  # 清除之前画的图
         plt.plot(self.ax, self.ay)  # 画出当前 ax 列表和 ay 列表中的值的图形
@@ -196,30 +200,34 @@ class GameState():
         pygame.display.update()
         clock = pygame.time.Clock()
         clock.tick(FRAME_PER_SEC)
+
         return image_data, self.reward, self.terminal
 
     def create_enemy(self):
             # 生成敌机 hp=1
-            if self.enemy_frequency % ENEMY_FREQUENCY == 0:
-                # enemy_noob_pos = [SCREEN_WIDTH/2, 0]
-                enemy_noob_pos = [random.randint(0, SCREEN_WIDTH - enemynoobimg.get_rect().width), 0]
+
+            if self.enemy_frequency %ENEMY_FREQUENCY==0 :
+                #enemy_noob_pos = [random.randint(0, SCREEN_WIDTH - enemynoobimg.get_rect().width), random.randint(0, SCREEN_HEIGHT//4)]
+                enemy_noob_pos = [random.randint(0, SCREEN_WIDTH - enemynoobimg.get_rect().width),10]
                 enemy_noob = Enemy(enemynoobimg, enemy_noob_pos, NOOB_SPEED, NOOB_HP)
                 self.enemies_group.add(enemy_noob)
             self.enemy_frequency += 1
             if self.enemy_frequency >= ENEMY_FREQUENCY:
+                #self.a = random.randint(0, SCREEN_WIDTH - enemynoobimg.get_rect().width)
                 self.enemy_frequency = 0
-
+            """
             # 生成敌机hp=2
             if self.enemy_ace_frequency % ENEMY_ACE_FREQUENCY == 0 and self.score > ACE_APPEAR_SCORE:
-                # enemy_ace_pos = [SCREEN_WIDTH/2, 0]
-                enemy_ace_pos = [random.randint(0, SCREEN_WIDTH - enemynoobimg.get_rect().width), 0]
+                #enemy_ace_pos = [0, 0]
+                enemy_ace_pos = [random.randint(0, SCREEN_WIDTH - enemynoobimg.get_rect().width), random.randint(0, SCREEN_HEIGHT//4)]
                 enemy_ace = Enemy(enemyaceimg, enemy_ace_pos, ACE_SPEED, ACE_HP)
                 self.enemies_group.add(enemy_ace)
             self.enemy_ace_frequency += 1
             if self.enemy_ace_frequency >= ENEMY_ACE_FREQUENCY:
                 self.enemy_ace_frequency = 0
+            """
+    def collision_event(self,input_actions,chose_type):
 
-    def collision_event(self):
         # 判断是否击中敌机，击中hp-1,若hp=0，加入其他精灵组中
         enemies_if_hitted = pygame.sprite.groupcollide(self.enemies_group, self.player.bullets_group,True,True)
         for enemy_if_hitted in enemies_if_hitted:
@@ -228,26 +236,64 @@ class GameState():
                 self.enemies_group.remove(enemy_if_hitted)
                 self.screen.blit(enemy_if_hitted.enemyburstimg, enemy_if_hitted.rect)
                 self.enemies_down_group.add(enemy_if_hitted)
-        # 计算分数
         for enemy_down in self.enemies_down_group:
             self.score += 1
-            # self.reward = 1
+            self.reward = 1
             self.enemies_down_group.remove(enemy_down)
-
+        # 计算分数
+        if input_actions[0]==1:
+            input_actions='L'
+        elif input_actions[1]==1:
+            input_actions='R'
+        elif input_actions[2]==1:
+            input_actions='S'
+        if len(list(self.Action))==20 and len(self.Reward)==20:
+            self.Action = self.Action[1:]
+            self.Action.append(input_actions)
+            self.Reward = self.Reward[1:]
+            self.Reward.append(self.reward)
+        else:
+            self.Action.append(input_actions)
+            self.Reward.append(self.reward)
+        if chose_type=="auto":
+            Action_font = pygame.font.Font(None, SCREEN_WIDTH // 31)
+            Action_text = f'A:{list(self.Action)}'
+            Action_render = Action_font.render(Action_text, True, (128, 128, 128))
+            self.screen.blit(Action_render, (4, 90))
+            Reward_font = pygame.font.Font(None, SCREEN_WIDTH // 31)
+            Reward_text = f'R:{self.Reward}'
+            Reward_render = Reward_font.render(Reward_text, True, (128, 128, 128))
+            self.screen.blit(Reward_render, (4, 110))
+            cycle_font = pygame.font.Font(None, SCREEN_WIDTH // 31)
+            cycle_text = f'Cycle:{self.cycle}'
+            cycle_render = cycle_font.render(cycle_text, True, (128, 128, 128))
+            self.screen.blit(cycle_render, (4, 70))
+            # 得分
+            score_font = pygame.font.Font(None, SCREEN_WIDTH // 31)
+            score_text = f'score:{self.score}'
+            score_render = score_font.render(score_text, True, (128, 128, 128))
+            self.screen.blit(score_render, (4, 50))
+            reward_font = pygame.font.Font(None, SCREEN_WIDTH // 31)
+            reward_text = f'total_reward:{self.rewards}'
+            reward_render = reward_font.render(reward_text, True, (128, 128, 128))
+            self.screen.blit(reward_render, (4, 30))
+        elif chose_type=="play" or "manual":
+            cycle_font = pygame.font.Font(None, SCREEN_WIDTH // 31)
+            cycle_text = f'Cycle:{self.cycle}'
+            cycle_render = cycle_font.render(cycle_text, True, (128, 128, 128))
+            self.screen.blit(cycle_render, (4, 50))
         # 得分
-        score_font = pygame.font.Font(None, SCREEN_WIDTH // 31)
-        score_text = f'score:{self.score}'
-        score_render = score_font.render(score_text, True, (0, 128, 128))
-        self.screen.blit(score_render, (4, 50))
+            score_font = pygame.font.Font(None, SCREEN_WIDTH // 31)
+            score_text = f'score:{self.score}'
+            score_render = score_font.render(score_text, True, (128, 128, 128))
+            self.screen.blit(score_render, (4, 30))
 
-        reward_font = pygame.font.Font(None, SCREEN_WIDTH // 31)
-        reward_text = f'score:{self.rewards}'
-        reward_render = reward_font.render(reward_text, True, (0, 128, 128))
-        self.screen.blit(reward_render, (4, 20))
+        #return self.Action,self.Reward
 
-    def off_screen_event(self, input_actions):
+    def off_screen_event(self,input_actions):
         # 移动子弹，移出屏幕后删除子弹
         for bullet in self.player.bullets_group:
+
             bullet.move()
             if bullet.rect.bottom <= 0:
                 self.player.bullets_group.remove(bullet)
@@ -256,44 +302,49 @@ class GameState():
         for enemy in self.enemies_group:
             enemy.move()
         for enemy in self.enemies_group:
-            if pygame.sprite.spritecollideany(enemy, self.player.bullets_group):
-                self.reward1 = 1
-            if enemy.rect.top > SCREEN_HEIGHT:
-                self.num += 1
+            # if pygame.sprite.spritecollideany(enemy,self.player.bullets_group):
+                # self.reward1=1
+            if enemy.rect.top >= SCREEN_HEIGHT:
+                self.a += 1
                 self.enemies_group.remove(enemy)
+            #print('self.player.rect.top - enemy.rect.bottom:', self.player.rect.top - enemy.rect.bottom)
+            #print('self.player.rect.height * 1.5:', self.player.rect.height * 1.5)
+            # if self.player.rect.top - enemy.rect.bottom > self.player.rect.height * 0.5:
+            #     if self.player.rect.centerx < enemy.rect.centerx :
+            #         if input_actions[1] == 1:
+            #             self.reward = 0.1
+            #         else:
+            #             self.reward = -0.1
+            #     # print("enemy.rect.right",self.player.rect.height)
+            #         break
+            #     if self.player.rect.centerx > enemy.rect.centerx :
+            #         if input_actions[0] == 1:
+            #             self.reward = 0.1
+            #         else:
+            #             self.reward = -0.1
+            #         break
 
-            if self.player.rect.top - enemy.rect.bottom > self.player.rect.height * 1.5:
-                if self.player.rect.centerx >= enemy.rect.centerx:
-                    if input_actions[1] == 1:
-                        self.reward = 0.1
-                    else:
-                        self.reward = -0.1
-                elif self.player.rect.centerx < enemy.rect.centerx:
-                    if input_actions[2] == 1:
-                        self.reward = 0.1
-                    else:
-                        self.reward = -0.1
-                break
-            elif self.player.rect.top - enemy.rect.bottom <= self.player.rect.height * 1.5:
-                if pygame.sprite.collide_rect(self.player, enemy) or self.num >= 1:
+            if self.player.rect.top - enemy.rect.bottom <= self.player.rect.height * 0.5:
+                if pygame.sprite.collide_rect(self.player,enemy) or self.a >= 2:
                     self.enemies_group.remove(enemy)
                     self.player.is_over = True
                     print('-------end of round------ score:', self.score)
-                    self.reward = -100
+                    # self.reward = 0
+                    self.reward = -20
                     self.terminal = True
                     break
-                if self.player.rect.centerx >= enemy.rect.centerx:
-                    if input_actions[2] == 1:
-                        self.reward = 0.1
-                    else:
-                        self.reward = -0.1
-                elif self.player.rect.centerx < enemy.rect.centerx:
-                    if input_actions[1] == 1:
-                        self.reward = 0.1
-                    else:
-                        self.reward = -0.1
-                break
-
+                # if self.player.rect.centerx < enemy.rect.centerx:
+                #     if input_actions[0] == 1:
+                #         self.reward = 0.1
+                #     else:
+                #         self.reward = -0.1
+                #     break
+                # if self.player.rect.centerx > enemy.rect.centerx:
+                #     if input_actions[1] == 1:
+                #         self.reward = 0.1
+                #     else:
+                #         self.reward = -0.1
+                #     break
 
 
 
@@ -356,11 +407,36 @@ class GameState():
                             pygame.quit()
                             exit()
 
+        elif game_type == "play":
+            if self.shoot_frequency % 4 == 0:
+                self.player.shoot()
+            if self.shoot_frequency >= 4:
+                self.shoot_frequency = 0
+            self.shoot_frequency += 1
+            for enemy in self.enemies_group:
+                if self.player.rect.top - enemy.rect.bottom > self.player.rect.height * 0.5:
+                    if self.player.rect.centerx < enemy.rect.centerx:
+                        self.player.moveRight()
+                        # print("enemy.rect.right",self.player.rect.height)
+                        break
+                    if self.player.rect.centerx > enemy.rect.centerx:
+                        self.player.moveLeft()
+                        break
+
+                if self.player.rect.top - enemy.rect.bottom <= self.player.rect.height * 0.5:
+                    if self.player.rect.centerx < enemy.rect.centerx:
+                        self.player.moveLeft()
+                        break
+                    if self.player.rect.centerx > enemy.rect.centerx:
+                        self.player.moveRight()
+                        break
+
         elif game_type == "auto":
-            if input_actions[0] == 1 or input_actions[1] == 1 or input_actions[2] == 1 or input_actions[3] == 1:  # 检查输入
-                if input_actions[1] == 1:
+            #or input_actions[3] == 1:
+            if input_actions[0] == 1 or input_actions[1] == 1 or input_actions[2]==1:  # 检查输入
+                if input_actions[0] == 1:
                     self.player.moveLeft()
-                elif input_actions[2] == 1:
+                elif input_actions[1] == 1:
                     self.player.moveRight()
                 else:
                     pass
@@ -370,14 +446,15 @@ class GameState():
                 raise ValueError('Multiple input actions!')
             #  判断游戏是否结束，如果未结束，子弹以一定频率发射
             # if not self.player.is_over:
-            if self.shoot_frequency % 5 == 0:
+            if self.shoot_frequency % 3 == 0:
                 self.player.shoot()
             self.shoot_frequency += 1
-            if self.shoot_frequency >= 5:
+            if self.shoot_frequency >= 3:
                 self.shoot_frequency = 0
         return terminal
 
 
+"""
 def my_spritecollide(sprite, group_bullet):
     crashed = []
     append = crashed.append
@@ -406,7 +483,7 @@ def my_groupcollide(group_enemy, group_bullet):
             crashed[enemy_sprite] = collision
     return crashed
 
-
+"""
 def check_mouse(size, x, y, position):
     width, height = size
     x_match = x < position[0] < x + width
