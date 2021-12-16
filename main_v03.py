@@ -48,7 +48,7 @@ font = pygame.font.Font(font_addr, 36)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # torch.cuda.current_device()
-# a = torch.cuda.is_available()
+a = torch.cuda.is_available()
 # print(a)
 
 def preprocess(observation):
@@ -119,21 +119,21 @@ class BrainDQNMain(object):
 
     def train(self):
         minibatch = random.sample(self.replayMemory, BATCH_SIZE)
-        # state_batch = torch.tensor(data[0]).to(device)
-        state_batch = [torch.tensor(data[0]).to(device) for data in minibatch]
-        action_batch = [torch.tensor(data[1]).to(device) for data in minibatch]
-        reward_batch = [torch.tensor(data[2]).to(device) for data in minibatch]
-        nextState_batch = [torch.tensor(data[3]).to(device) for data in minibatch]
+
+        state_batch = [data[0] for data in minibatch]
+        action_batch = [data[1] for data in minibatch]
+        reward_batch = [data[2] for data in minibatch]
+        nextState_batch = [data[3] for data in minibatch]
 
         y_batch = np.zeros([BATCH_SIZE, 1])
         nextState_batch = np.array(nextState_batch)
-        nextState_batch = torch.Tensor(nextState_batch)
+        nextState_batch = torch.Tensor(nextState_batch).to(device)
         action_batch = np.array(action_batch)
 
         index = action_batch.argmax(axis=1)
         # axis=1是在行中比较选出最大的列索引，axis=0是在列中比较选出最大的行索引。
         index = np.reshape(index, [BATCH_SIZE, 1])
-        action_batch_tensor = torch.LongTensor(index)
+        action_batch_tensor = torch.LongTensor(index).to(device)
 
         QValue_batch = self.Q_netT(nextState_batch)  # 使用target网络，预测nextState_batch的动作
         QValue_batch = QValue_batch.detach().cpu().numpy()
@@ -189,7 +189,7 @@ class BrainDQNMain(object):
         self.timeStep += 1
 
     def get_action(self):
-        currentState = torch.Tensor([self.currentState])
+        currentState = torch.Tensor([self.currentState]).to(device)
         QValue = self.Q_net(currentState)[0]
         #print("QValue",QValue)
         #print("self.Q_net",self.Q_net(currentState))
