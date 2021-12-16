@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 sys.path.append("fly/")
-import myfly_env_v03 as env
+import environment as env
 import numpy as np
 import random
 import torch
@@ -35,8 +35,10 @@ ay = []
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 pygame.init()
-curr_path = Path.cwd()
-curr_path_2 = Path.cwd()
+paths = ["images"]
+# curr_path = Path.cwd()
+curr_path = Path.cwd().joinpath(*paths)
+curr_path_2 = Path.cwd().joinpath(*paths)
 startIMG = pygame.image.load(curr_path / 'bg.png')
 startimg = pygame.transform.smoothscale(startIMG, (SCREEN_WIDTH, SCREEN_HEIGHT))
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -151,9 +153,9 @@ class BrainDQNMain(object):
         y_batch = np.array(y_batch)
         y_batch = np.reshape(y_batch, [BATCH_SIZE, 1])
         # print('bbbbbbbbbbbb', each_reward)
-        state_batch_tensor = Variable(torch.Tensor(state_batch), device=device, dtype=torch.long)
+        state_batch_tensor = Variable(torch.Tensor(state_batch))
         # variable提供了自动求导的功能
-        y_batch_tensor = Variable(torch.Tensor(y_batch), device=device, dtype=torch.float)
+        y_batch_tensor = Variable(torch.Tensor(y_batch))
         y_predict = self.Q_net(state_batch_tensor).gather(1, action_batch_tensor)  # 索引对应Q值
         loss = self.loss_func(y_predict, y_batch_tensor)
         self.optimizer.zero_grad()
@@ -310,9 +312,9 @@ def main():
     game_type = starting_screen()
     actions = 3  # 动作个数
     brain = BrainDQNMain(actions)
-    fly = env.GameState()
+    fly = env.Game()
     action0 = np.array([1, 0, 0])
-    observation0, reward0, terminal = fly.frame_step(action0, game_type)
+    observation0, reward0, terminal = fly.step(action0)
     observation0 = cv2.cvtColor(cv2.resize(observation0, (80, 80)), cv2.COLOR_BGR2GRAY)
     ret, observation0 = cv2.threshold(observation0, 1, 255, cv2.THRESH_BINARY)
     brain.set_init_state(observation0)
@@ -320,7 +322,7 @@ def main():
     while 1 != 0 :
 
                 action = brain.get_action()
-                nextObservation, reward, terminal = fly.frame_step(action, game_type)
+                nextObservation, reward, terminal = fly.step(action)
                 nextObservation = preprocess(nextObservation)
                 brain.set_perception(nextObservation, action, reward, terminal)
 
