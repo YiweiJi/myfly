@@ -167,7 +167,7 @@ class GameState():
         # 显示子弹和敌机
         self.player.bullets_group.draw(self.screen)
         self.enemies_group.draw(self.screen)
-        print('=========self.reward:', self.reward)
+        # print('=========self.reward:', self.reward)
 
 
         for event in pygame.event.get():
