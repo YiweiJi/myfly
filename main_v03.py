@@ -109,7 +109,7 @@ class BrainDQNMain(object):
         #print("save model param")
         # state_dict = torch.load("params3.pth")
         torch.save(self.Q_net.state_dict(), curr_path_2/'params31.pth')  # 保存训练好的参数
-        # torch.save(state_dict, 'params3.pth',_use_new_zipfile_serialization=False)
+
 
     def load(self):
         if os.path.exists(curr_path_2/'params31.pth'):
