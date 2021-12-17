@@ -335,7 +335,7 @@ class GameState():
                     self.player.is_over = True
                     print('-------end of round------ score:', self.score)
                     # self.reward = 0
-                    self.reward = -20
+                    self.reward = -10
                     self.terminal = True
                     break
                 # if self.player.rect.centerx < enemy.rect.centerx:
