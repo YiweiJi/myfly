@@ -144,6 +144,7 @@ class GameState():
         self.cycle=0
         self.ax=[]
         self.ay=[]
+        self.aveReward = 0
         #self.rewards += self.reward
     def frame_step(self, input_actions, chose_type):
         #print("indd",input_actions)
@@ -164,6 +165,7 @@ class GameState():
         #print("terminal",self.terminal)
         if self.terminal:
             self.cycle += 1
+            self.aveReward += self.rewards
         # 显示子弹和敌机
         self.player.bullets_group.draw(self.screen)
         self.enemies_group.draw(self.screen)
@@ -173,12 +175,15 @@ class GameState():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 exit()
-        if self.reward == -20:
+        if self.reward == -10:
             self.player = Player(self.screen.get_rect().bottomleft)
             self.enemies_group = pygame.sprite.Group()  # 敌机精灵组
             self.enemies_down_group = pygame.sprite.Group()  # 敌机击毁精灵组
-            self.ax.append(self.cycle)
-            self.ay.append(self.score)
+            if self.cycle % 20 == 0:
+                self.aveReward = self.aveReward/20
+                self.ax.append(self.cycle)
+                self.ay.append(self.aveReward)
+                self.aveReward = 0
             self.shoot_frequency = 0  # 频率
             self.enemy_frequency = 0
             self.enemy_ace_frequency = 0
