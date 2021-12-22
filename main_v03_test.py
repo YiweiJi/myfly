@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 sys.path.append("fly/")
-import myfly_env_v03 as env
+import myfly_env_v03_test as env
 import numpy as np
 import random
 import torch
