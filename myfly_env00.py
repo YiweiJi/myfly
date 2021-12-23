@@ -126,7 +126,7 @@ class GameState():
         pygame.display.set_icon(icon)
 
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        self.player = Player(self.screen.get_rect().bottomleft)
+        self.player = Player(self.screen.get_rect().midbottom)
         self.enemies_group = pygame.sprite.Group()  # 敌机精灵组
         self.enemies_down_group = pygame.sprite.Group()  # 敌机击毁精灵组
 
@@ -138,13 +138,14 @@ class GameState():
         # self.reward1=0
         self.terminal = False
         self.rewards=0
-        self.a=0
+        self.a  =0
         self.Reward=[]
         self.Action=[]
         self.cycle=0
         self.ax=[]
         self.ay=[]
         self.aveReward = 0
+        self.count = 0
         #self.rewards += self.reward
     def frame_step(self, input_actions, chose_type):
         #print("indd",input_actions)
@@ -176,7 +177,7 @@ class GameState():
             if event.type == pygame.QUIT:
                 exit()
         if self.reward == -10:
-            self.player = Player(self.screen.get_rect().bottomleft)
+            self.player = Player(self.screen.get_rect().midbottom)
             self.enemies_group = pygame.sprite.Group()  # 敌机精灵组
             self.enemies_down_group = pygame.sprite.Group()  # 敌机击毁精灵组
             if self.cycle % 20 == 0:
@@ -189,7 +190,7 @@ class GameState():
             self.enemy_ace_frequency = 0
             self.score = 0
             self.reward = 0
-
+            self.count = 0
             self.terminal = False
             self.rewards = 0
             self.a=0
@@ -209,17 +210,37 @@ class GameState():
         return image_data, self.reward, self.terminal
 
     def create_enemy(self):
-            # 生成敌机 hp=1
+        if self.enemy_frequency % ENEMY_FREQUENCY == 0 and self.count < 5:
+            # enemy_noob_pos = [random.randint(0, SCREEN_WIDTH - enemynoobimg.get_rect().width), random.randint(0, SCREEN_HEIGHT//4)]
+            enemy_noob_pos = [random.randint(0, SCREEN_WIDTH - enemynoobimg.get_rect().width), 10]
+            enemy_noob = Enemy(enemynoobimg, enemy_noob_pos, NOOB_SPEED, NOOB_HP)
+            self.enemies_group.add(enemy_noob)
+            self.count += 1
+        self.enemy_frequency += 1
+        if self.enemy_frequency >= ENEMY_FREQUENCY and self.count == 5:
+            # self.a = random.randint(0, SCREEN_WIDTH - enemynoobimg.get_rect().width)
+            self.enemy_frequency = 0
+        if self.enemy_frequency % ENEMY_FREQUENCY == 9 and self.count == 5:
+            enemy_noob_pos = [10, 10]
+            enemy_noob = Enemy(enemynoobimg, enemy_noob_pos, NOOB_SPEED, NOOB_HP)
+            self.enemies_group.add(enemy_noob)
+            self.enemy_frequency = 0
+            self.count += 1
+        if self.enemy_frequency % 4 == 3 and self.count == 6:
+            enemy_noob_pos = [700, 10]
+            enemy_noob = Enemy(enemynoobimg, enemy_noob_pos, NOOB_SPEED, NOOB_HP)
+            self.enemies_group.add(enemy_noob)
+            self.enemy_frequency = 0
+            self.count += 1
+        if self.enemy_frequency % 4 == 3 and self.count == 7:
+            enemy_noob_pos = [700, 10]
+            enemy_noob = Enemy(enemynoobimg, enemy_noob_pos, NOOB_SPEED, NOOB_HP)
+            self.enemies_group.add(enemy_noob)
+            self.enemy_frequency = 1
+            self.count += 1
+        if self.count >= 8:
+            self.count = 0
 
-            if self.enemy_frequency %ENEMY_FREQUENCY==0 :
-                #enemy_noob_pos = [random.randint(0, SCREEN_WIDTH - enemynoobimg.get_rect().width), random.randint(0, SCREEN_HEIGHT//4)]
-                enemy_noob_pos = [random.randint(0, SCREEN_WIDTH - enemynoobimg.get_rect().width),10]
-                enemy_noob = Enemy(enemynoobimg, enemy_noob_pos, NOOB_SPEED, NOOB_HP)
-                self.enemies_group.add(enemy_noob)
-            self.enemy_frequency += 1
-            if self.enemy_frequency >= ENEMY_FREQUENCY:
-                #self.a = random.randint(0, SCREEN_WIDTH - enemynoobimg.get_rect().width)
-                self.enemy_frequency = 0
             """
             # 生成敌机hp=2
             if self.enemy_ace_frequency % ENEMY_ACE_FREQUENCY == 0 and self.score > ACE_APPEAR_SCORE:
