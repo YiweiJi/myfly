@@ -209,9 +209,11 @@ class GameState():
     def create_enemy(self):
             # 生成敌机 hp=1
 
-            if self.enemy_frequency %ENEMY_FREQUENCY==0 :
-                #enemy_noob_pos = [random.randint(0, SCREEN_WIDTH - enemynoobimg.get_rect().width), random.randint(0, SCREEN_HEIGHT//4)]
-                enemy_noob_pos = [random.randint(0, SCREEN_WIDTH - enemynoobimg.get_rect().width),10]
+            if self.enemy_frequency % ENEMY_FREQUENCY == 0:
+                # enemy_noob_pos = [random.randint(0, SCREEN_WIDTH - enemynoobimg.get_rect().width), random.randint(0, SCREEN_HEIGHT//4)]
+                enemy_noob_pos = [random.randint(0, SCREEN_WIDTH - enemynoobimg.get_rect().width), 10]
+                # 固定位置出现敌机
+                # enemy_noob_pos = [SCREEN_WIDTH//4, 0]
                 enemy_noob = Enemy(enemynoobimg, enemy_noob_pos, NOOB_SPEED, NOOB_HP)
                 self.enemies_group.add(enemy_noob)
             self.enemy_frequency += 1
@@ -311,14 +313,14 @@ class GameState():
             #print('self.player.rect.top - enemy.rect.bottom:', self.player.rect.top - enemy.rect.bottom)
             #print('self.player.rect.height * 1.5:', self.player.rect.height * 1.5)
             if self.player.rect.top - enemy.rect.bottom > self.player.rect.height * 0.5:
-                if self.player.rect.centerx < enemy.rect.centerx :
+                if self.player.rect.centerx < enemy.rect.centerx:
                     if input_actions[1] == 1:
                         self.reward = 0.1
                     else:
                         self.reward = -0.1
                 # print("enemy.rect.right",self.player.rect.height)
                     break
-                if self.player.rect.centerx > enemy.rect.centerx :
+                if self.player.rect.centerx > enemy.rect.centerx:
                     if input_actions[0] == 1:
                         self.reward = 0.1
                     else:
@@ -409,9 +411,9 @@ class GameState():
                             exit()
 
         elif game_type == "play":
-            if self.shoot_frequency % 4 == 0:
+            if self.shoot_frequency % 5 == 0:
                 self.player.shoot()
-            if self.shoot_frequency >= 4:
+            if self.shoot_frequency >= 5:
                 self.shoot_frequency = 0
             self.shoot_frequency += 1
             for enemy in self.enemies_group:
@@ -447,10 +449,10 @@ class GameState():
                 raise ValueError('Multiple input actions!')
             #  判断游戏是否结束，如果未结束，子弹以一定频率发射
             # if not self.player.is_over:
-            if self.shoot_frequency % 3 == 0:
+            if self.shoot_frequency % 5 == 0:
                 self.player.shoot()
             self.shoot_frequency += 1
-            if self.shoot_frequency >= 3:
+            if self.shoot_frequency >= 5:
                 self.shoot_frequency = 0
         return terminal
 

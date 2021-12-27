@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
-FRAME_PER_SEC = 40  # 帧数
+FRAME_PER_SEC = 30  # 帧数
 PLAYER_SPEED = 30
 NOOB_SPEED = 20
 ACE_SPEED = 30
@@ -149,7 +149,7 @@ class GameState():
         #self.rewards += self.reward
     def frame_step(self, input_actions, chose_type):
         #print("indd",input_actions)
-        self.reward=0
+        self.reward = 0
         # self.reward1=0
         self.terminal = self.game_mode(input_actions, chose_type)
 
@@ -472,10 +472,10 @@ class GameState():
                 raise ValueError('Multiple input actions!')
             #  判断游戏是否结束，如果未结束，子弹以一定频率发射
             # if not self.player.is_over:
-            if self.shoot_frequency % 3 == 0:
+            if self.shoot_frequency % 5 == 0:
                 self.player.shoot()
             self.shoot_frequency += 1
-            if self.shoot_frequency >= 3:
+            if self.shoot_frequency >= 5:
                 self.shoot_frequency = 0
         return terminal
 

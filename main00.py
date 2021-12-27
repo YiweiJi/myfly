@@ -20,9 +20,9 @@ from torch.autograd import Variable
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
 
-OBSERVE = 100
-EXPLORE = 2000000
-INITIAL_EPSILON = 0.1
+OBSERVE = 10000
+EXPLORE = 3000000
+INITIAL_EPSILON = 1
 FINAL_EPSILON = 0.0001
 BATCH_SIZE = 32
 GAMMA = 0.99
@@ -102,20 +102,20 @@ class BrainDQNMain(object):
         self.Q_netT = DeepQNetwork().to(device)
         self.load()
         self.loss_func = nn.MSELoss().to(device)
-        LR = 1e-3
+        LR = 1e-6
         self.optimizer = torch.optim.Adam(self.Q_net.parameters(), lr=LR)
 
     def save(self):
         #print("save model param")
         # state_dict = torch.load("params3.pth")
-        torch.save(self.Q_net.state_dict(), curr_path_2/'params32.pth')  # 保存训练好的参数
+        torch.save(self.Q_net.state_dict(), curr_path_2/'params35.pth')  # 保存训练好的参数
 
 
     def load(self):
-        if os.path.exists(curr_path_2/'params32.pth'):
+        if os.path.exists(curr_path_2/'params35.pth'):
             #print("load model param successful")
-            self.Q_net.load_state_dict(torch.load(curr_path_2/'params32.pth'))
-            self.Q_netT.load_state_dict(torch.load(curr_path_2/'params32.pth'))
+            self.Q_net.load_state_dict(torch.load(curr_path_2/'params35.pth'))
+            self.Q_netT.load_state_dict(torch.load(curr_path_2/'params35.pth'))
 
     def train(self):
         minibatch = random.sample(self.replayMemory, BATCH_SIZE)
